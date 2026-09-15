@@ -12,7 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Progress, ProgressLabel } from "@/components/ui/progress"
+import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { StatusBadge } from "@/components/patterns/status-badge"
 import {
@@ -195,16 +195,19 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               {exportEntitlements.map((entitlement) => (
-                <Progress
-                  key={entitlement.id}
-                  value={(entitlement.used / entitlement.limit) * 100}
-                  className="w-full"
-                >
-                  <ProgressLabel>{entitlement.size}</ProgressLabel>
-                  <span className="ml-auto text-sm text-muted-foreground tabular-nums">
-                    {entitlement.used} / {entitlement.limit} exports
-                  </span>
-                </Progress>
+                <div key={entitlement.id} className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm font-medium">{entitlement.size}</span>
+                    <span className="text-sm text-muted-foreground tabular-nums">
+                      {entitlement.used} / {entitlement.limit} exports
+                    </span>
+                  </div>
+                  <Progress
+                    value={(entitlement.used / entitlement.limit) * 100}
+                    className="w-full"
+                    aria-label={`${entitlement.size} export usage`}
+                  />
+                </div>
               ))}
             </CardContent>
             <CardFooter>

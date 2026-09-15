@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next'
 import { Inter, Source_Serif_4 } from 'next/font/google'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
+import { Providers } from './providers'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
@@ -58,7 +59,7 @@ export default function RootLayout({
     >
       <body className="bg-background font-sans antialiased">
         <TooltipProvider delay={200}>
-          {children}
+          <Providers>{children}</Providers>
           <Toaster position="bottom-right" />
         </TooltipProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
