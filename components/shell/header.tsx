@@ -2,7 +2,8 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Bell, Search, LogOut, Settings, UserRound } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Bell, Search, LogOut, Settings, UserRound, Languages } from "lucide-react"
 import { primaryNav } from "@/lib/navigation"
 import { mockUser } from "@/lib/mock-data"
 import { Input } from "@/components/ui/input"
@@ -29,9 +30,25 @@ import {
 
 export function Header() {
   const pathname = usePathname()
+  const [language, setLanguage] = useState<"en" | "bn">("en")
   const current = primaryNav.find(
     (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
   )
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem("qtor-language")
+    if (stored === "bn" || stored === "en") setLanguage(stored)
+    const sync = () => setLanguage(window.localStorage.getItem("qtor-language") === "bn" ? "bn" : "en")
+    window.addEventListener("qtor-language-change", sync)
+    return () => window.removeEventListener("qtor-language-change", sync)
+  }, [])
+
+  const toggleLanguage = () => {
+    const next = language === "en" ? "bn" : "en"
+    setLanguage(next)
+    window.localStorage.setItem("qtor-language", next)
+    window.dispatchEvent(new Event("qtor-language-change"))
+  }
 
   return (
     <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background/90 px-4 shadow-[0_1px_0_oklch(0.78_0.11_195/0.18)] supports-backdrop-filter:backdrop-blur-md sm:px-6 lg:px-8">
@@ -52,6 +69,18 @@ export function Header() {
       </div>
 
       <div className="ml-auto flex items-center gap-1.5">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 gap-1.5 rounded-full border-primary/20 bg-primary/[0.04] px-2.5 text-xs font-semibold transition-all hover:-translate-y-0.5 hover:border-brand/50 hover:bg-brand/10"
+          onClick={toggleLanguage}
+          aria-label="Switch language"
+        >
+          <Languages data-icon="inline-start" />
+          <span className={language === "en" ? "text-primary" : "text-muted-foreground"}>EN</span>
+          <span className="text-muted-foreground">/</span>
+          <span className={language === "bn" ? "text-primary" : "text-muted-foreground"}>বাংলা</span>
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
