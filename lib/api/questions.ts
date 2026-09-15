@@ -41,7 +41,7 @@ export const questionApi = {
 }
 
 export function taxonomyKey(kind: string, params: Record<string, string | undefined>) {
-  const search = new URLSearchParams(Object.entries(params).filter(([, value]) => value) as [string, string[]])
+  const search = new URLSearchParams(Object.entries(params).filter(([, value]) => value) as [string, string][])
   return `/taxonomy/${kind}?${search}`
 }
 
