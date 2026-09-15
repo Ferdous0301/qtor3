@@ -22,9 +22,9 @@ export function Sidebar() {
       <div className="flex h-14 items-center gap-2 px-4">
         <Link
           href="/dashboard"
-          className="flex items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="group flex items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         >
-          <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
+          <span className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#0b4167] via-[#087b9c] to-[#13c8e1] text-primary-foreground shadow-sm shadow-cyan-900/20 transition-transform duration-200 group-hover:rotate-[-4deg] group-hover:scale-105">
             <FileSignature className="size-4" />
           </span>
           <span className="font-serif text-[1.05rem] font-semibold tracking-tight text-sidebar-foreground">
