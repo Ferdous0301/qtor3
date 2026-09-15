@@ -1,53 +1,65 @@
-import { BookOpenText, Upload } from "lucide-react"
+"use client"
+
+import { useMemo, useState } from "react"
+import useSWR from "swr"
+import { BookOpenText, Check, ChevronDown, Filter, Loader2, RotateCcw, Search, SlidersHorizontal, X } from "lucide-react"
 import { PageContainer, PageHeader } from "@/components/shell/page-header"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Progress } from "@/components/ui/progress"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { questionApi, type QuestionSummary, type TaxonomyItem } from "@/lib/api/questions"
+
+const emptyValue = "all"
+const pageSize = 20
+
+type Filters = { classId: string; groupId: string; subjectId: string; chapterId: string; topicId: string; questionTypeId: string; levelId: string; sort: string }
+
+function useTaxonomy(kind: string, params: Record<string, string | undefined>, enabled = true) {
+  const key = enabled ? ["taxonomy", kind, ...Object.values(params)] : null
+  return useSWR<TaxonomyItem[]>(key, ([, taxonomyKind]) => questionApi.taxonomy(taxonomyKind as string, params), { keepPreviousData: true })
+}
+
+function SelectFilter({ label, value, placeholder, options, disabled, onChange }: { label: string; value: string; placeholder: string; options?: TaxonomyItem[]; disabled?: boolean; onChange: (value: string) => void }) {
+  return <div className="flex min-w-44 flex-1 flex-col gap-2"><Label className="text-xs font-medium text-muted-foreground">{label}</Label><Select value={value} onValueChange={onChange} disabled={disabled}><SelectTrigger><SelectValue placeholder={placeholder} /></SelectTrigger><SelectContent><SelectItem value={emptyValue}>All {label.toLowerCase()}</SelectItem>{options?.map((option) => <SelectItem key={option.id} value={option.id}>{option.name}</SelectItem>)}</SelectContent></Select></div>
+}
+
+function QuestionCard({ question, selected, onToggle }: { question: QuestionSummary; selected: boolean; onToggle: () => void }) {
+  const { taxonomy } = question
+  return <Card className={selected ? "border-primary/60 bg-primary/[0.025]" : "transition-colors hover:border-primary/30"}><CardHeader className="gap-3 pb-3"><div className="flex flex-wrap items-center justify-between gap-2"><div className="flex flex-wrap gap-2"><Badge variant="secondary">{taxonomy.question_type_name}</Badge><Badge variant="outline">{question.mark} {question.mark === 1 ? "mark" : "marks"}</Badge>{taxonomy.level_name && <Badge variant="outline">{taxonomy.level_name}</Badge>}</div><Button variant={selected ? "secondary" : "outline"} size="sm" onClick={onToggle}>{selected ? <Check data-icon="inline-start" /> : null}{selected ? "Selected" : "Select"}</Button></div><CardTitle className="text-base font-medium leading-relaxed">{question.question_text}</CardTitle></CardHeader><CardContent className="flex flex-wrap items-center justify-between gap-3 border-t pt-3"><p className="text-xs text-muted-foreground">{[taxonomy.subject_name, taxonomy.chapter_name, taxonomy.topic_name].filter(Boolean).join(" · ")}</p><span className="text-xs text-muted-foreground">No answer key yet</span></CardContent></Card>
+}
+
+function FilterContent({ filters, setFilter, classes, groups, subjects, chapters, topics, questionTypes, levels }: { filters: Filters; setFilter: (key: keyof Filters, value: string) => void; classes?: TaxonomyItem[]; groups?: TaxonomyItem[]; subjects?: TaxonomyItem[]; chapters?: TaxonomyItem[]; topics?: TaxonomyItem[]; questionTypes?: TaxonomyItem[]; levels?: TaxonomyItem[] }) {
+  return <div className="flex flex-col gap-4"><div className="flex flex-wrap gap-3"><SelectFilter label="Class" value={filters.classId} placeholder="Choose class" options={classes} onChange={(value) => setFilter("classId", value)} /><SelectFilter label="Group / stream" value={filters.groupId} placeholder="Choose group" options={groups} disabled={filters.classId === emptyValue} onChange={(value) => setFilter("groupId", value)} /><SelectFilter label="Subject" value={filters.subjectId} placeholder="Choose subject" options={subjects} disabled={filters.classId === emptyValue} onChange={(value) => setFilter("subjectId", value)} /></div><div className="flex flex-wrap gap-3"><SelectFilter label="Chapter" value={filters.chapterId} placeholder="Choose chapter" options={chapters} disabled={filters.subjectId === emptyValue} onChange={(value) => setFilter("chapterId", value)} /><SelectFilter label="Topic" value={filters.topicId} placeholder="Choose topic" options={topics} disabled={filters.chapterId === emptyValue} onChange={(value) => setFilter("topicId", value)} /><SelectFilter label="Question type" value={filters.questionTypeId} placeholder="Any type" options={questionTypes} onChange={(value) => setFilter("questionTypeId", value)} /><SelectFilter label="Level" value={filters.levelId} placeholder="Any level" options={levels} onChange={(value) => setFilter("levelId", value)} /></div></div>
+}
 
 export default function QuestionBankPage() {
-  return (
-    <PageContainer>
-      <PageHeader
-        title="Question Bank"
-        description="Your school's shared library of reusable exam questions."
-        actions={
-          <>
-            <Button variant="outline">
-              <Upload data-icon="inline-start" />
-              Import questions
-            </Button>
-            <Button>Add question</Button>
-          </>
-        }
-      />
+  const [filters, setFilters] = useState<Filters>({ classId: emptyValue, groupId: emptyValue, subjectId: emptyValue, chapterId: emptyValue, topicId: emptyValue, questionTypeId: emptyValue, levelId: emptyValue, sort: "newest" })
+  const [query, setQuery] = useState("")
+  const [page, setPage] = useState(1)
+  const [selected, setSelected] = useState<QuestionSummary[]>([])
+  const params = { class_id: filters.classId === emptyValue ? undefined : filters.classId }
+  const classes = useTaxonomy("classes", {})
+  const groups = useTaxonomy("groups", { class_id: params.class_id }, Boolean(params.class_id))
+  const subjects = useTaxonomy("subjects", { class_id: params.class_id, group_id: filters.groupId === emptyValue ? undefined : filters.groupId }, Boolean(params.class_id))
+  const chapters = useTaxonomy("chapters", { subject_id: filters.subjectId === emptyValue ? undefined : filters.subjectId }, filters.subjectId !== emptyValue)
+  const topics = useTaxonomy("topics", { chapter_id: filters.chapterId === emptyValue ? undefined : filters.chapterId }, filters.chapterId !== emptyValue)
+  const questionTypes = useTaxonomy("question-types", {})
+  const levels = useTaxonomy("levels", {})
+  const questionParams = useMemo(() => ({ class_id: params.class_id, group_id: filters.groupId === emptyValue ? undefined : filters.groupId, subject_id: filters.subjectId === emptyValue ? undefined : filters.subjectId, chapter_id: filters.chapterId === emptyValue ? undefined : filters.chapterId, topic_id: filters.topicId === emptyValue ? undefined : filters.topicId, question_type_id: filters.questionTypeId === emptyValue ? undefined : filters.questionTypeId, level_id: filters.levelId === emptyValue ? undefined : filters.levelId, q: query || undefined, sort: filters.sort, page, page_size: pageSize }), [filters, query, page, params.class_id])
+  const questions = useSWR(["questions", questionParams], ([, values]) => questionApi.questions(values), { keepPreviousData: true })
+  const setFilter = (key: keyof Filters, value: string) => { setPage(1); setFilters((current) => { const next = { ...current, [key]: value }; if (key === "classId") Object.assign(next, { groupId: emptyValue, subjectId: emptyValue, chapterId: emptyValue, topicId: emptyValue }); if (key === "groupId" || key === "subjectId") Object.assign(next, { chapterId: emptyValue, topicId: emptyValue }); if (key === "chapterId") next.topicId = emptyValue; return next }) }
+  const toggle = (question: QuestionSummary) => setSelected((current) => current.some((item) => item.id === question.id) ? current.filter((item) => item.id !== question.id) : [...current, question])
+  const reset = () => { setFilters({ classId: emptyValue, groupId: emptyValue, subjectId: emptyValue, chapterId: emptyValue, topicId: emptyValue, questionTypeId: emptyValue, levelId: emptyValue, sort: "newest" }); setQuery(""); setPage(1) }
+  const hasFilters = Object.values(filters).some((value) => value !== emptyValue && value !== "newest") || Boolean(query)
+  const data = questions.data
+  const items = data?.items ?? []
+  const totalPages = data?.total_pages ?? (data?.total ? Math.ceil(data.total / pageSize) : undefined)
 
-      <Empty className="min-h-96 flex-1 border border-dashed">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <BookOpenText />
-          </EmptyMedia>
-          <EmptyTitle>No questions yet</EmptyTitle>
-          <EmptyDescription>
-            Import questions from a scanned paper or add them one by one to
-            start building your shared bank.
-          </EmptyDescription>
-        </EmptyHeader>
-        <EmptyContent>
-          <div className="flex items-center gap-2">
-            <Button variant="outline">
-              <Upload data-icon="inline-start" />
-              Import questions
-            </Button>
-            <Button>Add question</Button>
-          </div>
-        </EmptyContent>
-      </Empty>
-    </PageContainer>
-  )
+  return <PageContainer><PageHeader title="Question Bank" description="Browse your school's shared library of reusable exam questions." actions={<><Button variant="outline" onClick={reset}><RotateCcw data-icon="inline-start" />Reset</Button><Button disabled={!selected.length}><BookOpenText data-icon="inline-start" />Add {selected.length ? `${selected.length} to paper` : "to paper"}</Button></>} /><div className="flex flex-col gap-4"><div className="flex flex-col gap-3 sm:flex-row"><div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" /><Input className="pl-9" placeholder="Search questions in Bangla or English..." value={query} onChange={(event) => { setQuery(event.target.value); setPage(1) }} /></div><Select value={filters.sort} onValueChange={(value) => setFilter("sort", value)}><SelectTrigger className="w-full sm:w-44"><SlidersHorizontal data-icon="inline-start" /><SelectValue /></SelectTrigger><SelectContent><SelectItem value="newest">Newest first</SelectItem><SelectItem value="mark_asc">Marks: low to high</SelectItem><SelectItem value="mark_desc">Marks: high to low</SelectItem><SelectItem value="relevance">Most relevant</SelectItem></SelectContent></Select><Sheet><SheetTrigger render={<Button variant="outline" className="sm:hidden"><Filter data-icon="inline-start" />Filters</Button>} /><SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto"><SheetHeader><SheetTitle>Filter questions</SheetTitle></SheetHeader><div className="p-4"><FilterContent filters={filters} setFilter={setFilter} classes={classes.data} groups={groups.data} subjects={subjects.data} chapters={chapters.data} topics={topics.data} questionTypes={questionTypes.data} levels={levels.data} /></div></SheetContent></Sheet></div><Card className="hidden sm:block"><CardContent className="p-4"><FilterContent filters={filters} setFilter={setFilter} classes={classes.data} groups={groups.data} subjects={subjects.data} chapters={chapters.data} topics={topics.data} questionTypes={questionTypes.data} levels={levels.data} /></CardContent></Card>{selected.length > 0 && <div className="flex items-center justify-between gap-3 border border-primary/20 bg-primary/[0.04] p-3 text-sm"><span><strong>{selected.length}</strong> question{selected.length === 1 ? "" : "s"} selected</span><Button variant="ghost" size="sm" onClick={() => setSelected([])}>Clear selection <X data-icon="inline-end" /></Button></div>}{questions.error ? <Empty className="min-h-64 border border-destructive/30"><EmptyHeader><EmptyMedia variant="icon"><BookOpenText /></EmptyMedia><EmptyTitle>Question bank unavailable</EmptyTitle><EmptyDescription>{questions.error.message}</EmptyDescription></EmptyHeader><EmptyContent><Button variant="outline" onClick={() => questions.mutate()}><RotateCcw data-icon="inline-start" />Try again</Button></EmptyContent></Empty> : questions.isLoading ? <div className="flex min-h-64 items-center justify-center gap-2 text-sm text-muted-foreground"><Loader2 className="animate-spin" />Loading the question bank...</div> : items.length === 0 ? <Empty className="min-h-64 border border-dashed"><EmptyHeader><EmptyMedia variant="icon"><Search /></EmptyMedia><EmptyTitle>{hasFilters ? "No questions match these filters" : "No questions to show"}</EmptyTitle><EmptyDescription>{hasFilters ? "Try removing a filter or searching with fewer words." : "Choose a class or subject to begin browsing the question bank."}</EmptyDescription></EmptyHeader><EmptyContent>{hasFilters && <Button variant="outline" onClick={reset}>Clear filters</Button>}</EmptyContent></Empty> : <div className="flex flex-col gap-3">{items.map((question) => <QuestionCard key={question.id} question={question} selected={selected.some((item) => item.id === question.id)} onToggle={() => toggle(question)} />)}<div className="flex items-center justify-between gap-3 border-t pt-4"><p className="text-sm text-muted-foreground">{data?.total ? `${data.total.toLocaleString()} questions` : "Questions"}</p><div className="flex items-center gap-2"><Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((current) => current - 1)}>Previous</Button><span className="text-sm text-muted-foreground">Page {page}{totalPages ? ` of ${totalPages}` : ""}</span><Button variant="outline" size="sm" disabled={Boolean(totalPages && page >= totalPages) || items.length < pageSize} onClick={() => setPage((current) => current + 1)}>Next</Button></div></div></div>}</div></PageContainer>
 }
