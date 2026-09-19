@@ -57,7 +57,7 @@
   --card-foreground: oklch(0.2 0.02 260);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.2 0.02 260);
-  --primary: oklch(0.42 0.14 252);
+  --primary: oklch(0.39 0.16 255);
   --primary-foreground: oklch(0.99 0 0);
   --secondary: oklch(0.965 0.005 260);
   --secondary-foreground: oklch(0.25 0.02 260);
@@ -66,9 +66,9 @@
   --accent: oklch(0.955 0.008 260);
   --accent-foreground: oklch(0.25 0.02 260);
   --destructive: oklch(0.55 0.22 25);
-  --border: oklch(0.9 0.006 260);
-  --input: oklch(0.9 0.006 260);
-  --ring: oklch(0.4 0.15 258 / 0.5);
+  --border: oklch(0.89 0.008 260);
+  --input: oklch(0.87 0.008 260);
+  --ring: oklch(0.39 0.16 255 / 0.45);
   --brand: oklch(0.78 0.11 195);
   --brand-foreground: oklch(0.22 0.04 220);
   --chart-1: oklch(0.4 0.15 258);
@@ -168,6 +168,9 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  ::selection {
+    background: color-mix(in oklch, var(--brand) 28%, transparent);
   }
 }

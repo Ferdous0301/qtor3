@@ -16,10 +16,10 @@ export function Sidebar() {
 
   return (
     <aside
-      className="hidden shrink-0 flex-col border-r border-border bg-sidebar lg:flex lg:w-60"
+      className="hidden shrink-0 flex-col border-r border-border bg-sidebar lg:flex lg:w-56"
       aria-label="Primary"
     >
-      <div className="flex h-14 items-center gap-2 px-4">
+      <div className="flex h-16 items-center gap-2 px-5">
         <Link
           href="/dashboard"
           className="group flex items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
@@ -46,9 +46,9 @@ export function Sidebar() {
                     href={item.href}
                     aria-current={isActive ? "page" : undefined}
                     className={cn(
-                      "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                      "flex items-center gap-3 rounded-md border-l-2 border-transparent px-3 py-2.5 text-sm font-medium text-sidebar-foreground/70 transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                       isActive
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                        ? "border-primary bg-sidebar-accent text-sidebar-accent-foreground"
                         : "hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
                     )}
                   />
@@ -70,14 +70,6 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="border-t border-border px-4 py-3">
-        <Link
-          href="/design-system"
-          className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-        >
-          Design system reference
-        </Link>
-      </div>
     </aside>
   )
 }

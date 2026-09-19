@@ -23,12 +23,14 @@ const mockQuestions: QuestionSummary[] = [
     id: "mock-photosynthesis",
     question_text: "Explain how photosynthesis converts light energy into chemical energy in a green plant. Mention the role of chlorophyll and write the balanced word equation.",
     mark: 5,
+    source: "sample",
     taxonomy: { class_id: "mock-class", class_name: "Class 10", subject_id: "mock-biology", subject_name: "Biology", question_type_id: "mock-creative", question_type_name: "Creative", level_name: "Application", chapter_name: "Life Processes", topic_name: "Photosynthesis" },
   },
   {
     id: "mock-quadratic",
     question_text: "If the roots of the equation x² − 7x + k = 0 differ by 3, find the value of k and verify both roots.",
     mark: 4,
+    source: "sample",
     taxonomy: { class_id: "mock-class", class_name: "Class 10", subject_id: "mock-mathematics", subject_name: "Mathematics", question_type_id: "mock-short-answer", question_type_name: "Short answer", level_name: "Analysis", chapter_name: "Algebra", topic_name: "Quadratic equations" },
   },
 ]
