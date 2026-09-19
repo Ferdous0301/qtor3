@@ -51,14 +51,14 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background/90 px-4 shadow-[0_1px_0_oklch(0.78_0.11_195/0.18)] supports-backdrop-filter:backdrop-blur-md sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-3 border-b border-border bg-background px-4 sm:px-6 lg:px-8">
       <h2 className="hidden shrink-0 text-sm font-medium text-foreground lg:block">
         {current?.title ?? "Qtor"}
       </h2>
 
       <Separator orientation="vertical" className="hidden h-5 lg:block" />
 
-      <div className="relative w-full max-w-sm">
+      <div className="relative hidden w-full max-w-sm sm:block">
         <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
         <Input
           type="search"
