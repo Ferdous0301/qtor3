@@ -3,10 +3,9 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
-import { Bell, Search, LogOut, Settings, UserRound, Languages } from "lucide-react"
+import { Bell, LogOut, Settings, UserRound, Languages } from "lucide-react"
 import { primaryNav } from "@/lib/navigation"
 import { mockUser } from "@/lib/mock-data"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -58,21 +57,11 @@ export function Header() {
 
       <Separator orientation="vertical" className="hidden h-5 lg:block" />
 
-      <div className="relative hidden w-full max-w-sm sm:block">
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          type="search"
-          placeholder="Search papers, questions, templates…"
-          aria-label="Search"
-          className="pl-8"
-        />
-      </div>
-
       <div className="ml-auto flex items-center gap-1.5">
         <Button
           variant="outline"
           size="sm"
-          className="h-8 gap-1.5 rounded-full border-primary/20 bg-primary/[0.04] px-2.5 text-xs font-semibold transition-all hover:-translate-y-0.5 hover:border-brand/50 hover:bg-brand/10"
+          className="h-8 gap-1.5 rounded-md border-transparent px-2 text-xs font-medium text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground"
           onClick={toggleLanguage}
           aria-label="Switch language"
         >
