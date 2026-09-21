@@ -42,6 +42,9 @@ const baseUrl = () => (process.env.NEXT_PUBLIC_API_BASE_URL ?? '').replace(/\/$/
 
 let accessToken: string | null = null
 let csrfToken: string | null = null
+let refreshInFlight: Promise<AuthSession> | null = null
+function csrfCookie() { return typeof document === "undefined" ? csrfToken : document.cookie.split(";").map((part) => part.trim()).find((part) => part.startsWith("csrf_token="))?.split("=").slice(1).join("=") || csrfToken }
+async function refreshOnce() { if (refreshInFlight) return refreshInFlight; const run = async () => { const headers = new Headers({ "Content-Type": "application/json" }); const token = csrfCookie(); if (token) headers.set("X-CSRF-Token", token); const call = () => fetch(`${baseUrl()}/api/v1/auth/refresh`, { method: "POST", body: "{}", headers, credentials: "include" }); const response = typeof navigator !== "undefined" && "locks" in navigator ? await navigator.locks.request("qtor-refresh", call) : await call(); const payload = await response.json().catch(() => null); if (!response.ok) throw new AuthApiError(payload?.detail ?? "Your session has expired.", payload?.error?.code ?? "UNKNOWN", response.status); authTokenStore.setSession(payload); return payload as AuthSession }; refreshInFlight = run().finally(() => { refreshInFlight = null }); return refreshInFlight }
 
 export const authTokenStore = {
   get accessToken() {
@@ -73,8 +76,9 @@ async function request<T>(path: string, init: RequestInit = {}, retryRefresh = t
   const headers = new Headers(init.headers)
   headers.set('Content-Type', 'application/json')
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
-  if (csrfToken && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(init.method ?? 'GET')) {
-    headers.set('X-CSRF-Token', csrfToken)
+  const currentCsrf = csrfCookie()
+  if (currentCsrf && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(init.method ?? 'GET')) {
+    headers.set('X-CSRF-Token', currentCsrf)
   }
 
   const response = await fetch(`${baseUrl()}${path}`, { ...init, headers, credentials: 'include' })
@@ -82,7 +86,7 @@ async function request<T>(path: string, init: RequestInit = {}, retryRefresh = t
 
   if (response.status === 401 && retryRefresh && path !== '/api/v1/auth/refresh') {
     try {
-      await request<AuthSession>('/api/v1/auth/refresh', { method: 'POST', body: '{}' }, false)
+      await refreshOnce()
       return request<T>(path, init, false)
     } catch {
       authTokenStore.clear()

@@ -14,7 +14,7 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/
 import { StatusBadge } from "@/components/patterns/status-badge"
 import { useAuth } from "@/components/auth/auth-provider"
 import { papersApi, type Paper } from "@/lib/api/papers"
-import { dashboardExportEntitlements, dashboardTemplates, dashboardTrial } from "@/lib/mock-dashboard"
+import { dashboardApi, featureLabels } from "@/lib/api/client"
 
 function formatUpdatedAt(value: string) {
   const date = new Date(value)
@@ -35,7 +35,10 @@ export default function DashboardPage() {
     () => papersApi.list({ page: 1, page_size: 5 }),
     { revalidateOnFocus: false },
   )
+  const { data: entitlements } = useSWR(ready && configured ? "dashboard-entitlements" : null, dashboardApi.entitlements, { revalidateOnFocus: false })
+  const { data: templates } = useSWR(ready && configured ? "dashboard-templates" : null, dashboardApi.templates, { revalidateOnFocus: false })
   const papers = data?.items ?? []
+  const readyTemplates = templates?.items?.filter((template) => template.status === "ready") ?? []
   const firstName = user?.full_name?.split(" ")[0] ?? "there"
 
   return (
@@ -85,14 +88,14 @@ export default function DashboardPage() {
 
           <Card>
             <CardHeader><CardTitle>Saved templates</CardTitle><CardDescription>Reusable layouts for your next paper</CardDescription><CardAction><Button variant="ghost" size="sm" nativeButton={false} render={<Link href="/templates" />}>View all</Button></CardAction></CardHeader>
-            <CardContent>{dashboardTemplates[0].id === "blank" ? <Empty className="border-0 py-6"><EmptyHeader><EmptyTitle>No saved templates yet</EmptyTitle><EmptyDescription>Save a layout from the Templates page to reuse it here.</EmptyDescription></EmptyHeader><Button variant="outline" nativeButton={false} render={<Link href="/templates" />}>Explore templates</Button></Empty> : null}</CardContent>
+            <CardContent>{readyTemplates.length ? <ul className="flex flex-col gap-3">{readyTemplates.map((template) => <li key={template.id} className="flex items-center justify-between gap-3 rounded-md border p-3"><div><p className="text-sm font-medium">{template.name}</p><p className="text-xs text-muted-foreground">Version {template.version ?? 1}</p></div><Badge variant="secondary">Ready</Badge></li>)}</ul> : <Empty className="border-0 py-6"><EmptyHeader><EmptyTitle>No saved templates yet</EmptyTitle><EmptyDescription>Copy your school&apos;s paper design from a Word file.</EmptyDescription></EmptyHeader><Button variant="outline" nativeButton={false} render={<Link href="/templates" />}>Explore templates</Button></Empty>}</CardContent>
           </Card>
         </div>
 
         <div className="flex flex-col gap-6">
-          <Card><CardHeader><CardTitle className="flex items-center gap-2"><Sparkles className="size-4 text-primary" />{dashboardTrial.planName}</CardTitle><CardDescription>{dashboardTrial.daysRemaining} days remaining</CardDescription><CardAction><Badge variant="secondary">Active</Badge></CardAction></CardHeader><CardContent className="flex flex-col gap-3">{dashboardTrial.features.map((feature) => <div key={feature.code} className="flex items-start gap-2.5"><span aria-hidden="true" className="mt-1 size-2 shrink-0 rounded-full bg-primary" /><span className="text-sm">{feature.name}</span></div>)}</CardContent><CardFooter><Button className="w-full" variant="outline">Upgrade to Premium</Button></CardFooter></Card>
+          <Card><CardHeader><CardTitle className="flex items-center gap-2"><Sparkles className="size-4 text-primary" />Premium features</CardTitle><CardDescription>Each trial is one use.</CardDescription><CardAction><Badge variant="secondary">Live</Badge></CardAction></CardHeader><CardContent className="flex flex-col gap-3">{(entitlements?.features ?? []).map((feature) => { const extra = feature.purchased_available_count + feature.granted_available_count; const label = featureLabels[feature.feature_code] ?? feature.feature_name; return <div key={feature.feature_code} className="flex items-start justify-between gap-3"><span className="text-sm">{label}</span><span className="text-right text-xs text-muted-foreground">{feature.trial_available && !feature.trial_consumed ? "Free trial available" : feature.trial_consumed ? "Trial used" : extra ? `+${extra} extra uses` : "Included"}</span></div> })}</CardContent><CardFooter><Button className="w-full" variant="outline">Upgrade to Premium</Button></CardFooter></Card>
 
-          <Card><CardHeader><CardTitle>Paper exports</CardTitle><CardDescription>Available entitlements by paper size</CardDescription></CardHeader><CardContent className="flex flex-col gap-4">{dashboardExportEntitlements.map((entitlement) => <div key={entitlement.id} className="flex flex-col gap-2"><div className="flex items-center justify-between gap-3"><span className="text-sm font-medium">{entitlement.size}</span><span className="text-sm text-muted-foreground tabular-nums">{entitlement.used} / {entitlement.limit} available</span></div><Progress value={(entitlement.used / entitlement.limit) * 100} className="w-full" aria-label={`${entitlement.size} export entitlement usage`} /></div>)}</CardContent><CardFooter><Button variant="ghost" size="sm" className="w-full" nativeButton={false} render={<Link href="/usage" />}>View full usage details</Button></CardFooter></Card>
+          <Card><CardHeader><CardTitle>Paper exports</CardTitle><CardDescription>Available entitlements by paper size</CardDescription></CardHeader><CardContent className="flex flex-col gap-4">{(entitlements?.paper_export ?? []).map((entitlement) => <div key={entitlement.size_tier_code} className="flex items-center justify-between gap-3"><span className="text-sm font-medium capitalize">{entitlement.available_count} {entitlement.size_tier_code} exports</span><Badge variant="secondary">{entitlement.available_count} available</Badge></div>)}{entitlements?.paper_export?.every((item) => item.available_count === 0) ? <p className="text-sm text-muted-foreground">Papers made only from the question bank export free.</p> : null}</CardContent><CardFooter><Button variant="ghost" size="sm" className="w-full" nativeButton={false} render={<Link href="/usage" />}>View full usage details</Button></CardFooter></Card>
         </div>
       </div>
     </PageContainer>
