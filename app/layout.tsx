@@ -1,12 +1,13 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Inter, Source_Serif_4 } from 'next/font/google'
+import { Inter, Noto_Sans_Bengali, Source_Serif_4 } from 'next/font/google'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
 import { Providers } from './providers'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
+const notoBengali = Noto_Sans_Bengali({ subsets: ['bengali'], variable: '--font-bengali' })
 const sourceSerif = Source_Serif_4({
   subsets: ['latin'],
   variable: '--font-source-serif',
@@ -52,7 +53,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${sourceSerif.variable} bg-background`}
+      className={`${inter.variable} ${notoBengali.variable} ${sourceSerif.variable} bg-background`}
     >
       <body className="bg-background font-sans antialiased">
         <TooltipProvider delay={200}>

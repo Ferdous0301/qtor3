@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: 'Inter', 'Inter Fallback', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter', 'Noto Sans Bengali', 'Inter Fallback', ui-sans-serif, system-ui, sans-serif;
   --font-serif: 'Source Serif 4', 'Source Serif 4 Fallback', ui-serif, Georgia, serif;
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
