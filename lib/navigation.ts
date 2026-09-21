@@ -7,6 +7,7 @@ import {
   LayoutTemplate,
   Gauge,
   Settings,
+  BadgeDollarSign,
 } from "lucide-react"
 
 export interface NavItem {
@@ -46,6 +47,12 @@ export const primaryNav: NavItem[] = [
     href: "/templates",
     icon: LayoutTemplate,
     description: "Reusable layouts and cover pages for new papers",
+  },
+  {
+    title: "Pricing",
+    href: "/pricing",
+    icon: BadgeDollarSign,
+    description: "Paper exports and premium feature pricing",
   },
   {
     title: "Usage",

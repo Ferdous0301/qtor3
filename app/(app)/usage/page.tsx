@@ -1,60 +1,9 @@
+"use client"
+import useSWR from "swr"
+import Link from "next/link"
 import { PageContainer, PageHeader } from "@/components/shell/page-header"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Progress, ProgressLabel } from "@/components/ui/progress"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { TriangleAlert } from "lucide-react"
-import { exportEntitlements, trialStatus } from "@/lib/mock-data"
-
-export default function UsagePage() {
-  return (
-    <PageContainer>
-      <PageHeader
-        title="Usage"
-        description="Track your export entitlements for the current billing period."
-      />
-
-      <Alert>
-        <TriangleAlert />
-        <AlertTitle>Your trial ends in {trialStatus.daysRemaining} days</AlertTitle>
-        <AlertDescription>
-          Upgrade to Premium to keep unlimited access to the question bank,
-          OCR import, and high-resolution exports.
-        </AlertDescription>
-      </Alert>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Export entitlements</CardTitle>
-          <CardDescription>
-            Exports remaining this billing period, by paper size
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-6">
-          {exportEntitlements.map((entitlement) => (
-            <Progress
-              key={entitlement.id}
-              value={(entitlement.used / entitlement.limit) * 100}
-              className="w-full"
-            >
-              <ProgressLabel>{entitlement.size} paper</ProgressLabel>
-              <span className="ml-auto text-sm text-muted-foreground tabular-nums">
-                {entitlement.used} / {entitlement.limit} exports used
-              </span>
-            </Progress>
-          ))}
-        </CardContent>
-        <CardFooter className="justify-end">
-          <Button variant="outline">Upgrade to Premium</Button>
-        </CardFooter>
-      </Card>
-    </PageContainer>
-  )
-}
+import { Badge } from "@/components/ui/badge"
+import { billingApi, money } from "@/lib/api/billing"
+export default function UsagePage(){const {data:entitlements}=useSWR("billing-entitlements",billingApi.entitlements);const {data:jobs}=useSWR("recent-jobs",billingApi.jobs);return <PageContainer><PageHeader title="Usage" description="Premium features, paper exports, and recent activity."/><section className="flex flex-col gap-3"><h2 className="text-lg font-semibold">Premium features</h2><div className="grid gap-4 md:grid-cols-2">{entitlements?.features.map(feature=>{const extra=feature.purchased_available_count+feature.granted_available_count;return <Card key={feature.feature_code}><CardHeader><div className="flex items-center justify-between gap-3"><CardTitle className="text-base">{feature.feature_name}</CardTitle><Badge variant="secondary">{feature.trial_available&&!feature.trial_consumed?"Trial available":feature.trial_consumed?"Trial used":`+${extra} extra`}</Badge></div><CardDescription>One use means one completed feature action.</CardDescription></CardHeader><CardContent><Link href={feature.feature_code==="ocr_image_to_question"?"/photo-to-question":feature.feature_code==="template_extraction"?"/templates":"/question-bank"}><Button variant="outline" size="sm">Try it</Button></Link></CardContent></Card>})}</div></section><section className="flex flex-col gap-3"><h2 className="text-lg font-semibold">Paper exports</h2><div className="grid gap-4 md:grid-cols-3">{entitlements?.paper_export.map(item=><Card key={item.size_tier_code}><CardHeader><CardTitle className="capitalize">{item.size_tier_code}</CardTitle><CardDescription>{item.available_count} available</CardDescription></CardHeader><CardContent><Link href="/pricing"><Button variant="outline" size="sm">Buy</Button></Link></CardContent></Card>)}</div></section><section className="flex flex-col gap-3"><h2 className="text-lg font-semibold">Recent activity</h2><Card><CardContent className="flex flex-col gap-3 pt-6">{jobs?.items?.length?jobs.items.map(job=><div key={job.id} className="flex justify-between border-b pb-2 text-sm"><span>{job.job_type}</span><Badge variant="outline">{job.status}</Badge></div>):<p className="text-sm text-muted-foreground">No recent OCR or AI jobs.</p>}</CardContent></Card></section></PageContainer>}
