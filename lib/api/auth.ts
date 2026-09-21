@@ -22,6 +22,10 @@ export type AuthErrorCode =
   | 'EMAIL_ALREADY_REGISTERED'
   | 'INVALID_AUTH_TOKEN'
   | 'INVALID_OR_EXPIRED_TOKEN'
+  | 'REFRESH_TOKEN_INVALID'
+  | 'REFRESH_TOKEN_REUSE_DETECTED'
+  | 'NO_REFRESH_TOKEN'
+  | 'UNAUTHORIZED'
   | 'RATE_LIMITED'
   | 'CSRF_FAILED'
   | 'UNKNOWN'
@@ -29,12 +33,16 @@ export type AuthErrorCode =
 export class AuthApiError extends Error {
   readonly code: AuthErrorCode
   readonly status: number
+  readonly details: Record<string, unknown>
+  readonly requestId?: string
 
-  constructor(message: string, code: AuthErrorCode = 'UNKNOWN', status = 0) {
+  constructor(message: string, code: AuthErrorCode = 'UNKNOWN', status = 0, details: Record<string, unknown> = {}, requestId?: string) {
     super(message)
     this.name = 'AuthApiError'
     this.code = code
     this.status = status
+    this.details = details
+    this.requestId = requestId
   }
 }
 
@@ -60,6 +68,7 @@ export const authTokenStore = {
   clear() {
     accessToken = null
     csrfToken = null
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('qtor:session-ended'))
   },
 }
 
@@ -94,12 +103,11 @@ async function request<T>(path: string, init: RequestInit = {}, retryRefresh = t
   }
 
   if (!response.ok) {
-    const detail = payload?.detail ?? payload?.message ?? 'Something went wrong. Please try again.'
-    throw new AuthApiError(
-      response.status === 429 ? 'Too many attempts. Please try again in a bit.' : detail,
-      errorCode(payload?.error?.code ?? payload?.code),
-      response.status,
-    )
+    const details = payload?.error?.details ?? {}
+    const code = errorCode(payload?.error?.code ?? details.code ?? payload?.code ?? (response.status === 401 ? 'UNAUTHORIZED' : response.status >= 500 ? 'UNKNOWN' : 'UNKNOWN'))
+    const requestId = payload?.error?.request_id ?? payload?.request_id
+    const safeMessage = code === 'INVALID_CREDENTIALS' ? 'Invalid email or password.' : code === 'ACCOUNT_INACTIVE' ? 'This account is disabled. Contact support.' : code === 'INVALID_OR_EXPIRED_TOKEN' ? 'This link has expired. Request a new one.' : code === 'REFRESH_TOKEN_REUSE_DETECTED' ? 'You were signed out for security. Please sign in again.' : response.status >= 500 ? 'Something went wrong. Please try again.' : response.status === 429 ? 'Too many attempts. Please try again in a bit.' : 'Something went wrong. Please try again.'
+    throw new AuthApiError(safeMessage, code, response.status, details, requestId)
   }
 
   if (payload?.access_token && payload?.csrf_token) authTokenStore.setSession(payload)
