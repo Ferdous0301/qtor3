@@ -1,57 +1,27 @@
-import { LayoutTemplate, CirclePlus } from "lucide-react"
+"use client"
+
+import Link from "next/link"
+import { useMemo, useState } from "react"
+import useSWR from "swr"
+import { Archive, CirclePlus, FileText, LoaderCircle, Upload } from "lucide-react"
 import { PageContainer, PageHeader } from "@/components/shell/page-header"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { mockTemplates } from "@/lib/mock-data"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { useAuth } from "@/components/auth/auth-provider"
+import { apiRequest, errorMessage } from "@/lib/api/client"
+import { billingApi, templateUses, templatesApi, type TemplateSummary } from "@/lib/api/templates"
 
-export default function TemplatesPage() {
-  return (
-    <PageContainer>
-      <PageHeader
-        title="Templates"
-        description="Reusable cover pages and layouts for new papers."
-        actions={
-          <Button>
-            <CirclePlus data-icon="inline-start" />
-            New template
-          </Button>
-        }
-      />
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {mockTemplates.map((template) => (
-          <Card key={template.id}>
-            <CardHeader>
-              <div className="flex aspect-4/3 items-center justify-center rounded-md bg-muted">
-                <LayoutTemplate className="size-8 text-muted-foreground" />
-              </div>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2">
-              <CardTitle>{template.name}</CardTitle>
-              <CardDescription>{template.layout}</CardDescription>
-              <Badge variant="secondary" className="w-fit">
-                Used {template.usedCount} times
-              </Badge>
-            </CardContent>
-            <CardFooter className="gap-2">
-              <Button variant="outline" size="sm" className="flex-1">
-                Preview
-              </Button>
-              <Button size="sm" className="flex-1">
-                Use template
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
-    </PageContainer>
-  )
+const MAX = 20 * 1024 * 1024
+function statusLabel(status: TemplateSummary["status"]) { return status === "ready" ? "Ready" : status === "failed" ? "Failed" : status === "archived" ? "Archived" : "Reading" }
+function UploadDialog({ open, onOpenChange, updateId, onDone }: { open: boolean; onOpenChange: (open: boolean) => void; updateId?: string; onDone: () => void }) {
+  const { configured } = useAuth(); const { data: entitlements } = useSWR(configured ? "template-entitlements" : null, () => apiRequest<{ features: Array<{ feature_code: string; trial_available: boolean; purchased_available_count: number; granted_available_count: number }> }>("/api/v1/billing/entitlements")); const { data: pricing } = useSWR(open && configured ? "template-pricing" : null, billingApi.pricing); const [file, setFile] = useState<File | null>(null); const [name, setName] = useState(""); const [state, setState] = useState<"idle" | "reading" | "done" | "error">("idle"); const [error, setError] = useState(""); const uses = templateUses(entitlements); const onFile = (value: File | undefined) => { if (!value) return; if (!value.name.toLowerCase().endsWith(".docx") || value.size > MAX) { setError("Choose a .docx file up to 20 MB."); return } setFile(value); setName(value.name.replace(/\.docx$/i, "")); setError("") }
+  const submit = async () => { if (!file || !uses) return; setState("reading"); setError(""); try { const result = updateId ? await templatesApi.version(updateId, file, name || undefined) : await templatesApi.upload(file, name.trim()); if (result.status === "failed") { setError(`${result.error_message || "Qtor could not capture this document."} You weren't charged — try a different file.`); setState("error"); return } setState("done"); onDone() } catch (cause) { setError(errorMessage(cause)); setState("error") } }
+  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="sm:max-w-lg"><DialogHeader><DialogTitle>{updateId ? "Update template" : "Upload a Word template"}</DialogTitle><DialogDescription>{updateId ? "This uses one more extraction." : "Capture your school's paper design from a Word file."}</DialogDescription></DialogHeader>{state === "reading" ? <div className="flex min-h-40 flex-col items-center justify-center gap-3 text-center"><LoaderCircle className="animate-spin text-primary" /><p className="font-medium">Reading your document…</p><p className="text-sm text-muted-foreground">Extraction runs securely and may take a few seconds. Please keep this page open.</p></div> : state === "done" ? <Alert><AlertTitle>Template captured</AlertTitle><AlertDescription>Your template is saved and ready to review.</AlertDescription></Alert> : <div className="flex flex-col gap-4"><div className="rounded-lg border border-dashed p-6 text-center"><Upload className="mx-auto mb-2 text-muted-foreground" /><input id="template-file" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={(event) => onFile(event.target.files?.[0])} className="sr-only" /><Label htmlFor="template-file" className="cursor-pointer font-medium">{file ? file.name : "Choose a .docx file"}</Label><p className="mt-1 text-xs text-muted-foreground">DOCX only · up to 20 MB. Insert your logo as a picture rather than linking to it.</p></div><div className="flex flex-col gap-2"><Label htmlFor="template-name">Template name</Label><Input id="template-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="School exam paper" /></div><p className="text-sm text-muted-foreground">This uses one template extraction. Your first is free. Available uses: {uses}.</p>{!uses ? <Alert><AlertTitle>You've used your free template extraction.</AlertTitle><AlertDescription>Extract this template for {pricing ? `${pricing.template_extraction_currency === "BDT" ? "৳" : ""}${pricing.template_extraction_standalone_price}` : "the catalog price"}. Purchasing opens soon.</AlertDescription></Alert> : null}{error ? <Alert variant="destructive"><AlertTitle>Could not capture template</AlertTitle><AlertDescription>{error}</AlertDescription></Alert> : null}</div>}<DialogFooter>{state === "reading" || state === "done" ? <Button onClick={() => { onOpenChange(false); onDone() }}>Close</Button> : <><Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button disabled={!file || !name.trim() || !uses} onClick={() => void submit()}>{updateId ? "Upload new version" : "Capture template"}</Button></>}</DialogFooter></DialogContent></Dialog>
 }
+export default function TemplatesPage() { const { configured } = useAuth(); const { data, error, mutate } = useSWR(configured ? "templates" : null, templatesApi.list); const [uploadOpen, setUploadOpen] = useState(false); const [updateId, setUpdateId] = useState<string>(); const [archiving, setArchiving] = useState<string>(); const groups = useMemo(() => { const map = new Map<string, TemplateSummary[]>(); for (const item of data?.items ?? []) { const key = item.root_template_id ?? item.id; map.set(key, [...(map.get(key) ?? []), item].sort((a, b) => b.version - a.version)) } return [...map.values()] }, [data]); const archive = async (id: string) => { if (!confirm("This removes the template from your library.")) return; setArchiving(id); try { await templatesApi.archive(id); await mutate() } finally { setArchiving(undefined) } }; return <PageContainer><PageHeader title="Templates" description="Copy your school's paper design from a Word file." actions={<Button onClick={() => { setUpdateId(undefined); setUploadOpen(true) }}><CirclePlus data-icon="inline-start" />New template</Button>} />{error ? <Alert variant="destructive"><AlertTitle>Unable to load templates</AlertTitle><AlertDescription>{errorMessage(error)}</AlertDescription></Alert> : groups.length ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{groups.map(([latest, ...history]) => <Card key={latest.id}><CardHeader><div className="flex aspect-4/3 items-center justify-center rounded-md bg-muted"><FileText className="text-muted-foreground" /></div><CardTitle>{latest.name}</CardTitle><CardDescription>Version {latest.version} · {new Date(latest.created_at).toLocaleDateString()}</CardDescription></CardHeader><CardContent className="flex flex-wrap gap-2"><Badge variant={latest.status === "ready" ? "secondary" : "outline"}>{statusLabel(latest.status)}</Badge>{history.length ? <Badge variant="outline">{history.length} earlier version{history.length === 1 ? "" : "s"}</Badge> : null}</CardContent><CardFooter className="gap-2"><Button variant="outline" size="sm" nativeButton={false} render={<Link href={`/templates/${latest.id}`} />}>View</Button><Button variant="outline" size="sm" onClick={() => { setUpdateId(latest.id); setUploadOpen(true) }}>Update</Button><Button variant="ghost" size="sm" disabled={archiving === latest.id} onClick={() => void archive(latest.id)}><Archive data-icon="inline-start" />Remove</Button></CardFooter></Card>)}</div> : <Empty className="border"><EmptyHeader><EmptyTitle>Copy your school's paper design from a Word file</EmptyTitle><EmptyDescription>Qtor captures the page, typography, header, footer, logo, watermark, and body layout.</EmptyDescription></EmptyHeader><Button onClick={() => setUploadOpen(true)}><CirclePlus data-icon="inline-start" />New template</Button></Empty>}<UploadDialog open={uploadOpen} onOpenChange={setUploadOpen} updateId={updateId} onDone={() => void mutate()} /></PageContainer> }
