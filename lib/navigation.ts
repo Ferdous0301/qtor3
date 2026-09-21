@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react"
 import {
   LayoutDashboard,
   BookOpenText,
+  Camera,
   FileText,
   LayoutTemplate,
   Gauge,
@@ -27,6 +28,12 @@ export const primaryNav: NavItem[] = [
     href: "/question-bank",
     icon: BookOpenText,
     description: "Browse and manage your shared question library",
+  },
+  {
+    title: "Photo to question",
+    href: "/photo-to-question",
+    icon: Camera,
+    description: "Turn question photos into reviewable content",
   },
   {
     title: "My Papers",
