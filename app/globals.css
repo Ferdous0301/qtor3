@@ -134,6 +134,12 @@
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  [lang="bn"], [lang="bn"] * {
+    font-family: var(--font-bengali), var(--font-sans);
+    line-height: 1.65;
+    overflow-wrap: anywhere;
   }
   ::selection {
     background: color-mix(in oklch, var(--brand) 28%, transparent);
