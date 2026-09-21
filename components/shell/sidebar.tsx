@@ -2,7 +2,8 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { FileSignature } from "lucide-react"
+import { FileSignature, ShieldCheck } from "lucide-react"
+import { useAuth } from "@/components/auth/auth-provider"
 import { cn } from "@/lib/utils"
 import { primaryNav } from "@/lib/navigation"
 import {
@@ -13,6 +14,8 @@ import {
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { user } = useAuth()
+  const navItems = user?.roles?.includes("admin") ? [...primaryNav, { title: "Admin", href: "/admin", icon: ShieldCheck, description: "Operational administration" }] : primaryNav
 
   return (
     <aside
@@ -34,7 +37,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-2">
-        {primaryNav.map((item) => {
+        {navItems.map((item) => {
           const isActive =
             pathname === item.href || pathname.startsWith(`${item.href}/`)
           const Icon = item.icon
