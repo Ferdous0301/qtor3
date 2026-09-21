@@ -1,0 +1,9 @@
+'use client'
+
+import { useParams } from 'next/navigation'
+import useSWR from 'swr'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { adminApi } from '@/lib/api/admin'
+
+export default function AdminRecordDetail() { const { section, id } = useParams<{ section: string; id: string }>(); const loader = section === 'templates' ? () => adminApi.templates(`/${id}`) : section === 'purchases' ? () => adminApi.purchases(`/${id}`) : section === 'jobs' ? () => adminApi.jobs(`/${id}`) : section === 'operations' ? () => adminApi.exports(`/${id}`) : () => adminApi.audit(`?entity_id=${id}&page=1&page_size=50`); const { data, error } = useSWR(`admin-record-${section}-${id}`, loader); const record = (data as { items?: Record<string, unknown>[] } | Record<string, unknown> | undefined); const values = Array.isArray(record?.items) ? record.items[0] : record; return <div className="flex flex-col gap-6"><header><Badge variant="outline">Admin detail</Badge><h1 className="mt-3 text-3xl font-semibold">{section.replaceAll('-', ' ')} record</h1><p className="mt-2 font-mono text-xs text-muted-foreground">{id}</p></header><Card><CardHeader><CardTitle>Record fields</CardTitle></CardHeader><CardContent>{error ? <p className="text-sm text-destructive">{error.message}</p> : !values ? <p className="text-sm text-muted-foreground">Loading record…</p> : <dl className="grid gap-3 sm:grid-cols-2">{Object.entries(values).map(([key, value]) => <div key={key} className="rounded-md border p-3"><dt className="text-xs uppercase tracking-wide text-muted-foreground">{key.replaceAll('_', ' ')}</dt><dd className="mt-1 break-words text-sm">{typeof value === 'object' ? JSON.stringify(value) : String(value ?? '—')}</dd></div>)}</dl>}</CardContent></Card></div> }
