@@ -1,4 +1,4 @@
-import { authTokenStore } from "@/lib/api/auth"
+import { apiRequest } from "@/lib/api/client"
 
 export type TaxonomyItem = { id: string; name: string; label?: string }
 export type QuestionTaxonomy = {
@@ -13,20 +13,9 @@ export type QuestionDetail = QuestionSummary & {
   options?: { order_index: number; option_text: string; is_correct: boolean }[]
   sources?: { board: string; board_full: string; source_type: string; year: number }[]
 }
-export type PagedQuestions = { items: QuestionSummary[]; total?: number; page?: number; page_size?: number; total_pages?: number }
+export type PagedQuestions = { items: QuestionSummary[]; total?: number; total_items?: number; page?: number; page_size?: number; total_pages?: number }
 
-const baseUrl = () => (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/$/, "")
-
-async function request<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const url = baseUrl()
-  if (!url) throw new Error("The Qtor backend URL is not configured yet.")
-  const headers = new Headers({ Accept: "application/json" })
-  if (authTokenStore.accessToken) headers.set("Authorization", `Bearer ${authTokenStore.accessToken}`)
-  const response = await fetch(`${url}${path}`, { headers, credentials: "include", signal })
-  const payload = await response.json().catch(() => null)
-  if (!response.ok) throw new Error(payload?.detail ?? payload?.message ?? "Unable to load question bank.")
-  return payload
-}
+async function request<T>(path: string, signal?: AbortSignal): Promise<T> { return apiRequest<T>(path, { signal }) }
 
 export const questionApi = {
   taxonomy: (kind: string, params: Record<string, string | undefined>, signal?: AbortSignal) => {
