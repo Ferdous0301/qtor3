@@ -5,9 +5,9 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/components/auth/auth-provider'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { LayoutDashboard, Users, ShieldCheck, ReceiptText, Activity, FileArchive, ScrollText, ArrowLeft } from 'lucide-react'
+import { LayoutDashboard, Users, ShieldCheck, ReceiptText, Activity, FileArchive, ScrollText, ArrowLeft, Settings2, Network } from 'lucide-react'
 
-const items = [['/admin', 'Overview', LayoutDashboard], ['/admin/users', 'Users', Users], ['/admin/entitlements', 'Entitlements', ShieldCheck], ['/admin/purchases', 'Purchases & payments', ReceiptText], ['/admin/operations', 'Exports & jobs', Activity], ['/admin/usage', 'OCR/AI usage', Activity], ['/admin/templates', 'Templates', FileArchive], ['/admin/audit-log', 'Audit log', ScrollText]] as const
+const items = [['/admin', 'Overview', LayoutDashboard], ['/admin/users', 'Users', Users], ['/admin/entitlements', 'Entitlements', ShieldCheck], ['/admin/purchases', 'Purchases & payments', ReceiptText], ['/admin/operations', 'Exports & jobs', Activity], ['/admin/usage', 'OCR/AI usage', Activity], ['/admin/templates', 'Templates', FileArchive], ['/admin/pricing', 'Pricing & config', Settings2], ['/admin/taxonomy', 'Taxonomy', Network], ['/admin/audit-log', 'Audit log', ScrollText]] as const
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const { user, ready } = useAuth(); const router = useRouter(); const pathname = usePathname(); const allowed = user?.roles?.includes('admin')
