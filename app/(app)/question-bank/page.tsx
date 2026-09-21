@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { Suspense, useEffect, useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import useSWR from "swr"
 import { BookOpenText, Check, ChevronLeft, ChevronRight, Filter, RotateCcw, Search, X } from "lucide-react"
@@ -46,7 +46,7 @@ function QuestionRow({ question, index, selected, expanded, onToggle, onExpand }
 
 function LoadingRows() { return <div className="divide-y divide-border">{[1, 2, 3, 4].map((item) => <div key={item} className="flex gap-4 px-5 py-6"><div className="size-4 rounded-sm bg-muted" /><div className="flex flex-1 flex-col gap-3"><div className="h-4 w-4/5 rounded bg-muted" /><div className="h-3 w-2/5 rounded bg-muted" /></div></div>)}</div> }
 
-export default function QuestionBankPage() {
+function QuestionBankContent() {
   const { configured } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -91,5 +91,13 @@ export default function QuestionBankPage() {
       <section className="overflow-hidden rounded-md border border-border bg-card" aria-label="Question list">{questions.isLoading && !previewMode ? <LoadingRows /> : questions.error && configured ? <Empty className="min-h-64"><EmptyHeader><EmptyMedia variant="icon"><RotateCcw /></EmptyMedia><EmptyTitle>Unable to load questions</EmptyTitle><EmptyDescription>{questions.error instanceof Error ? questions.error.message : "Please try again."}</EmptyDescription></EmptyHeader><Button onClick={() => questions.mutate()}>Retry</Button></Empty> : !items.length ? <Empty className="min-h-64"><EmptyHeader><EmptyMedia variant="icon"><Search /></EmptyMedia><EmptyTitle>No questions found</EmptyTitle><EmptyDescription>Try changing your search or filters.</EmptyDescription></EmptyHeader>{activeFilters && <Button variant="outline" onClick={reset}><X data-icon="inline-start" />Clear filters</Button>}</Empty> : <div>{items.map((question, index) => <QuestionRow key={question.id} question={question} index={(page - 1) * pageSize + index + 1} selected={selected.some((item) => item.id === question.id)} expanded={expandedId === question.id} onToggle={() => toggle(question)} onExpand={() => setExpandedId((current) => current === question.id ? null : question.id)} />)}</div>}</section>
       {totalPages > 1 && <div className="flex items-center justify-between"><p className="text-xs text-muted-foreground">Page {page} of {totalPages}</p><div className="flex gap-2"><Button variant="outline" size="sm" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page === 1}><ChevronLeft data-icon="inline-start" />Previous</Button><Button variant="outline" size="sm" onClick={() => setPage((current) => Math.min(totalPages, current + 1))} disabled={page >= totalPages}>Next<ChevronRight data-icon="inline-end" /></Button></div></div>}
     </div>{selected.length > 0 && <div className="fixed inset-x-3 bottom-20 z-20 flex items-center justify-between gap-3 rounded-md border border-primary/20 bg-card px-4 py-3 shadow-lg sm:inset-x-auto sm:bottom-6 sm:right-6 sm:w-auto"><p className="text-sm font-medium">{selected.length} selected</p><div className="flex items-center gap-2"><Button variant="ghost" size="sm" onClick={() => setSelected([])}><X data-icon="inline-start" />Clear</Button><Button size="sm" disabled={!paperId} onClick={addToPaper}><BookOpenText data-icon="inline-start" />{paperId ? "Add to paper" : "Select questions"}</Button></div></div>}</PageContainer>
+}
+
+export default function QuestionBankPage() {
+  return (
+    <Suspense fallback={<PageContainer><div className="flex min-h-64 items-center justify-center text-sm text-muted-foreground">Loading question bank…</div></PageContainer>}>
+      <QuestionBankContent />
+    </Suspense>
+  )
 }
 
